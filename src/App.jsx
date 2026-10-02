@@ -4,6 +4,7 @@ function App() {
   const [caixa, setCaixa] = useState(null)
   const [valor, setValor] = useState('')
   const [formaPagamento, setFormaPagamento] = useState('pix')
+  const [resumo, setResumo] = useState(null)
  
   async function buscarStatus() {
     const resposta = await fetch('http://127.0.0.1:5000/daily/status')
@@ -17,6 +18,7 @@ function App() {
     })
     const dados = await resposta.json()
     setCaixa(dados)
+    setResumo(null)
     buscarStatus()
   }
   async function registrarVenda() {
@@ -38,7 +40,7 @@ function App() {
       method: 'POST'
     })
     const dados = await resposta.json()
-    console.log("Resumo do dia", dados)
+    setResumo(dados)
     buscarStatus()
   }
 
@@ -73,6 +75,15 @@ function App() {
   </select>
   <button type="submit">Registrar Venda</button>
 </form>
+
+{resumo && (
+  <div style={{ marginTop: '20px', padding: '15px', border: '1px solid #ccc' }}>
+    <h2>Resumo do dia</h2>
+    <p>Vendas: R$ {resumo.total_sales.toFixed(2)}</p>
+    <p>Retiradas: R$ {resumo.total_withdrawals.toFixed(2)}</p>
+    <p><strong>Total líquido: R$ {resumo.net_total.toFixed(2)}</strong></p>
+  </div>
+)}
     </div>
   )
 }
