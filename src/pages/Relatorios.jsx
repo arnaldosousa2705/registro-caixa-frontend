@@ -27,6 +27,10 @@ function Relatorios() {
   const [relatorioMes, setRelatorioMes] = useState(new Date().getMonth() + 1)
   const [relatorioMensal, setRelatorioMensal] = useState(null)
 
+  // --- Relatório anual (NOVO) ---
+  const [anoAnual, setAnoAnual] = useState(new Date().getFullYear())
+  const [relatorioAnual, setRelatorioAnual] = useState(null)
+
   async function buscarRelatorioDiario() {
     try {
       const resposta = await fetch(`http://127.0.0.1:5000/reports/daily?date=${dataRelatorio}`)
@@ -53,6 +57,22 @@ function Relatorios() {
         setRelatorioMensal(dados)
       } else {
         console.error('Erro ao buscar relatório mensal:', dados)
+      }
+    } catch (erro) {
+      console.error('Erro de conexão:', erro)
+    }
+  }
+
+  // NOVO
+  async function buscarRelatorioAnual() {
+    try {
+      const resposta = await fetch(`http://127.0.0.1:5000/reports/yearly?year=${anoAnual}`)
+      const dados = await resposta.json()
+
+      if (resposta.ok) {
+        setRelatorioAnual(dados)
+      } else {
+        console.error('Erro ao buscar relatório anual:', dados)
       }
     } catch (erro) {
       console.error('Erro de conexão:', erro)
@@ -124,6 +144,24 @@ function Relatorios() {
           <p>Vendas: <Moeda valor={relatorioMensal.total_sales} /></p>
           <p>Retiradas: <Moeda valor={relatorioMensal.total_withdrawals} /></p>
           <p><strong>Total líquido: <Moeda valor={relatorioMensal.net_total} /></strong></p>
+        </div>
+      )}
+
+      {/* ---------- RELATÓRIO DO ANO (NOVO) ---------- */}
+      <h3>Relatório do Ano</h3>
+      <input
+        type="number"
+        value={anoAnual}
+        onChange={(e) => setAnoAnual(Number(e.target.value))}
+      />
+      <button onClick={buscarRelatorioAnual}>Ver Relatório</button>
+
+      {relatorioAnual && (
+        <div className="resumo">
+          <h2>{relatorioAnual.year}</h2>
+          <p>Vendas: <Moeda valor={relatorioAnual.total_sales} /></p>
+          <p>Retiradas: <Moeda valor={relatorioAnual.total_withdrawals} /></p>
+          <p><strong>Total líquido: <Moeda valor={relatorioAnual.net_total} /></strong></p>
         </div>
       )}
     </div>
