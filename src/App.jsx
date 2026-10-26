@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NumericFormat } from 'react-number-format'
 
 function App() {
@@ -12,6 +12,11 @@ function App() {
   const [editandoVendaId, setEditandoVendaId] = useState(null)
   const [editValor, setEditValor] = useState('')
   const [editForma, setEditForma] = useState('pix')
+  const [editandoRetiradaId, setEditandoRetiradaId] = useState(null)
+  const [editValorRetirada, setEditValorRetirada] = useState('')
+  const [editMotivo, setEditMotivo] = useState('')
+  const [mensagem, setMensagem] = useState(null)
+  const timerMensagem = useRef(null)
  
   async function buscarStatus() {
     const resposta = await fetch('http://127.0.0.1:5000/daily/status')
@@ -24,8 +29,13 @@ function App() {
       method: 'POST'
     })
     const dados = await resposta.json()
-    setCaixa(dados)
-    setResumo(null)
+
+    if (resposta.ok) {
+      mostrarMensagem('Caixa aberto com sucesso!', 'sucesso')
+      setResumo(null)
+    } else {
+      mostrarMensagem(dados.error || 'Erro ao abrir o caixa.', 'erro')
+    }
     buscarStatus()
   }
 
@@ -43,10 +53,15 @@ function App() {
       payment_method: formaPagamento
     })
   })
-  await resposta.json()
-  setValor('')
-  buscarStatus()
-  buscarDadosDoDia()
+  const dados = await resposta.json()
+  if (resposta.ok) {
+    mostrarMensagem('Venda registrada com sucesso!', 'sucesso')
+    setValor('')
+    buscarStatus()
+    buscarDadosDoDia()
+  } else {
+    mostrarMensagem(dados.error || 'Erro ao registrar venda.', 'erro')
+  }
 }
 
 async function registrarRetirada() {
@@ -58,11 +73,16 @@ async function registrarRetirada() {
       reason: motivo
     })
   })
-  await resposta.json()
-  setValorRetirada('')
-  setMotivo('')
-  buscarStatus()
-  buscarDadosDoDia()
+  const dados = await resposta.json()
+  if (resposta.ok) {
+    mostrarMensagem('Retirada registrada com sucesso!', 'sucesso')
+    setValorRetirada('')
+    setMotivo('')
+    buscarStatus()
+    buscarDadosDoDia()
+  } else {
+    mostrarMensagem(dados.error || 'Erro ao registrar retirada.', 'erro')
+  }
 }
 
   async function fecharCaixa() {
@@ -70,7 +90,12 @@ async function registrarRetirada() {
       method: 'POST'
     })
     const dados = await resposta.json()
+    if (resposta.ok) {
+      mostrarMensagem('Caixa fechado com sucesso!', 'sucesso')
     setResumo(dados)
+    } else {
+      mostrarMensagem(dados.error || 'Erro ao fechar o caixa.', 'erro')
+    }
     buscarStatus()
   }
 
@@ -83,20 +108,34 @@ async function registrarRetirada() {
 
   async function apagarVenda(id) {
     if (window.confirm(`Tem certeza que deseja apagar a venda #${id}?`)) {
-      await fetch(`http://127.0.0.1:5000/sales/${id}`, {method: 'DELETE'})
-      buscarDadosDoDia()
+      
+      const resposta = await fetch(`http://127.0.0.1:5000/sales/${id}`, {method: 'DELETE'})
+      const dados = await resposta.json()
+      
+      if (resposta.ok) {
+        mostrarMensagem('Venda apagada com sucesso!', 'sucesso')
+      } else {
+        mostrarMensagem(dados.error || 'Erro ao apagar venda.', 'erro')
+    }
+    buscarDadosDoDia()
     }
   }
 
     async function apagarRetirada(id) {
     if (window.confirm(`Tem certeza que deseja apagar a retirada #${id}?`)) {
-      await fetch(`http://127.0.0.1:5000/withdrawals/${id}`, {method: 'DELETE'})
+      const resposta = await fetch(`http://127.0.0.1:5000/withdrawals/${id}`, {method: 'DELETE'})
+      const dados = await resposta.json()
+      if (resposta.ok) {
+        mostrarMensagem('Retirada apagada com sucesso!', 'sucesso')
+      } else {
+        mostrarMensagem(dados.error || 'Erro ao apagar retirada.', 'erro')
+      }
       buscarDadosDoDia()
     }
   }
 
   async function salvarEdicaoVenda(id) {
-    await fetch(`http://127.0.0.1:5000/sales/${id}`, {
+    const resposta = await fetch(`http://127.0.0.1:5000/sales/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -104,15 +143,59 @@ async function registrarRetirada() {
         payment_method: editForma
       })
     })
-    setEditandoVendaId(null)
-    setEditValor('')
-    setEditForma('pix')
-    buscarDadosDoDia()
+    const dados = await resposta.json()
+
+    if (resposta.ok) {
+      mostrarMensagem('Venda editada com sucesso!', 'sucesso')
+      setEditandoVendaId(null)
+      setEditValor('')
+      setEditForma('pix')
+      buscarDadosDoDia()
+    } else {
+      mostrarMensagem(dados.error || 'Erro ao editar venda.', 'erro')
+    }
+  }
+
+  async function salvarEdicaoRetirada(id) {
+    const resposta = await fetch(`http://127.0.0.1:5000/withdrawals/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: editValorRetirada,
+        reason: editMotivo
+      })
+    })
+
+    const dados = await resposta.json()
+
+    if (resposta.ok) {
+      mostrarMensagem('Retirada editada com sucesso!', 'sucesso')
+      setEditandoRetiradaId(null)
+      setEditValorRetirada('')
+      setEditMotivo('')
+      buscarDadosDoDia()
+    } else {
+      mostrarMensagem(dados.error || 'Erro ao editar retirada.', 'erro')
+    }
+  }
+
+  function mostrarMensagem(texto, tipo) {
+    setMensagem({ tipo, texto })
+    clearTimeout(timerMensagem.current)
+    timerMensagem.current = setTimeout(() => {
+      setMensagem(null)
+    }, 3000)
   }
 
 return (
     <div className="app">
       <h1>Registro de Caixa</h1>
+
+      {mensagem && (
+        <div className={`mensagem mensagem-${mensagem.tipo}`}>
+          {mensagem.texto}
+        </div>
+      )}
 
       <div className={`status status-${caixa.status}`}>
         Status: {caixa.status}
@@ -234,10 +317,45 @@ return (
           <ul>
             {dadosDoDia.withdrawals.map((retirada) => (
               <li key={retirada.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span>#{retirada.id} | {retirada.date} | R$ {retirada.amount} ({retirada.reason})</span>
-                <button onClick={() => apagarRetirada(retirada.id)} style={{ background: '#ef4444', padding: '5px 10px', marginLeft: '10px' }}>
-                  Apagar
+                {editandoRetiradaId === retirada.id ? (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <NumericFormat
+                  value={editValorRetirada}
+                  onValueChange={(values) => setEditValorRetirada(values.floatValue)}
+                  thousandSeparator="."
+                  decimalSeparator=","
+                  decimalScale={2}
+                  fixedDecimalScale
+                  prefix="R$ "
+                />
+                <input
+                  type="text"
+                  value={editMotivo}
+                  onChange={(e) => setEditMotivo(e.target.value)}
+                  placeholder="Motivo"
+                />
+                <button onClick={() => salvarEdicaoRetirada(retirada.id)} style={{ background: '#10b981' }}>
+                  Salvar
                 </button>
+                <button onClick={() => setEditandoRetiradaId(null)} style={{ background: '#6b7280' }}>
+                  Cancelar
+                </button>
+              </div>
+                ) : (
+                  <>
+                    <span>#{retirada.id} | {retirada.date} | R$ {retirada.amount} ({retirada.reason})</span>
+                    <button onClick={() => {
+                      setEditandoRetiradaId(retirada.id);
+                      setEditValorRetirada(retirada.amount);
+                      setEditMotivo(retirada.reason);
+                    }} style={{ background: '#3b82f6', padding: '5px 10px', marginLeft: '10px' }}>
+                      Editar
+                    </button>
+                    <button onClick={() => apagarRetirada(retirada.id)} style={{ background: '#ef4444', padding: '5px 10px', marginLeft: '10px' }}>
+                      Apagar
+                    </button>
+                  </>
+              )}
               </li>
             ))}
           </ul>

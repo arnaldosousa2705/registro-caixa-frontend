@@ -82,3 +82,14 @@ button:hover { background: #4338ca; }
 .resumo h2 { margin-top: 0; color: #4f46e5; }
 .resumo p { margin: 6px 0; font-size: 15px; }
 .resumo strong { color: #4f46e5; font-size: 18px; }
+
+.mensagem {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mensagem-sucesso { background: #d1fae5; color: #065f46; }
+.mensagem-erro { background: #fee2e2; color: #991b1b; }
