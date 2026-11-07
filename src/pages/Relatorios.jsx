@@ -32,6 +32,10 @@ function Relatorios() {
   const [relatorioAnual, setRelatorioAnual] = useState(null)
 
   async function buscarRelatorioDiario() {
+    if (!dataRelatorio) {
+      alert('Por favor, selecione uma data para o relatório diário.')
+      return
+    }
     try {
       const resposta = await fetch(`http://127.0.0.1:5000/reports/daily?date=${dataRelatorio}`)
       const dados = await resposta.json()
@@ -47,6 +51,10 @@ function Relatorios() {
   }
 
   async function buscarRelatorioMensal() {
+    if (!relatorioAno || !relatorioMes) {
+      alert('Por favor, selecione o ano e o mês para o relatório mensal.')
+      return
+    }
     try {
       const resposta = await fetch(
         `http://127.0.0.1:5000/reports/monthly?year=${relatorioAno}&month=${relatorioMes}`
@@ -65,6 +73,10 @@ function Relatorios() {
 
   // NOVO
   async function buscarRelatorioAnual() {
+    if (!anoAnual) {
+      alert('Por favor, selecione o ano para o relatório anual.')
+      return
+    }
     try {
       const resposta = await fetch(`http://127.0.0.1:5000/reports/yearly?year=${anoAnual}`)
       const dados = await resposta.json()
