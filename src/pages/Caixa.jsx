@@ -18,7 +18,7 @@ function Caixa() {
   const [editMotivo, setEditMotivo] = useState('')
   const [mensagem, setMensagem] = useState(null)
   const timerMensagem = useRef(null)
- 
+
   async function buscarStatus() {
     const resposta = await fetch('http://127.0.0.1:5000/daily/status')
     const dados = await resposta.json()
@@ -41,50 +41,55 @@ function Caixa() {
   }
 
   async function buscarDadosDoDia() {
-  const resposta = await fetch('http://127.0.0.1:5000/sales')
-  const dados = await resposta.json()
-  setDadosDoDia(dados)
+    let url = 'http://127.0.0.1:5000/sales'
+    if (caixa && caixa.status === 'aberto') {
+      url = `http://127.0.0.1:5000/sales?daily_register_id=${caixa.id}`
+    }
+    const resposta = await fetch(url)
+    const dados = await resposta.json()
+    setDadosDoDia(dados)
   }
-  async function registrarVenda() {
-  const resposta = await fetch('http://127.0.0.1:5000/sales', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      amount: valor,
-      payment_method: formaPagamento
-    })
-  })
-  const dados = await resposta.json()
-  if (resposta.ok) {
-    mostrarMensagem('Venda registrada com sucesso!', 'sucesso')
-    setValor('')
-    buscarStatus()
-    buscarDadosDoDia()
-  } else {
-    mostrarMensagem(dados.error || 'Erro ao registrar venda.', 'erro')
-  }
-}
 
-async function registrarRetirada() {
-  const resposta = await fetch('http://127.0.0.1:5000/withdrawals', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      amount: valorRetirada,
-      reason: motivo
+  async function registrarVenda() {
+    const resposta = await fetch('http://127.0.0.1:5000/sales', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: valor,
+        payment_method: formaPagamento
+      })
     })
-  })
-  const dados = await resposta.json()
-  if (resposta.ok) {
-    mostrarMensagem('Retirada registrada com sucesso!', 'sucesso')
-    setValorRetirada('')
-    setMotivo('')
-    buscarStatus()
-    buscarDadosDoDia()
-  } else {
-    mostrarMensagem(dados.error || 'Erro ao registrar retirada.', 'erro')
+    const dados = await resposta.json()
+    if (resposta.ok) {
+      mostrarMensagem('Venda registrada com sucesso!', 'sucesso')
+      setValor('')
+      buscarStatus()
+      buscarDadosDoDia()
+    } else {
+      mostrarMensagem(dados.error || 'Erro ao registrar venda.', 'erro')
+    }
   }
-}
+
+  async function registrarRetirada() {
+    const resposta = await fetch('http://127.0.0.1:5000/withdrawals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: valorRetirada,
+        reason: motivo
+      })
+    })
+    const dados = await resposta.json()
+    if (resposta.ok) {
+      mostrarMensagem('Retirada registrada com sucesso!', 'sucesso')
+      setValorRetirada('')
+      setMotivo('')
+      buscarStatus()
+      buscarDadosDoDia()
+    } else {
+      mostrarMensagem(dados.error || 'Erro ao registrar retirada.', 'erro')
+    }
+  }
 
   async function fecharCaixa() {
     const resposta = await fetch('http://127.0.0.1:5000/daily/close', {
@@ -93,38 +98,49 @@ async function registrarRetirada() {
     const dados = await resposta.json()
     if (resposta.ok) {
       mostrarMensagem('Caixa fechado com sucesso!', 'sucesso')
-    setResumo(dados)
+      setResumo(dados)
     } else {
       mostrarMensagem(dados.error || 'Erro ao fechar o caixa.', 'erro')
     }
     buscarStatus()
   }
 
+  function mostrarMensagem(texto, tipo) {
+    setMensagem({ tipo, texto })
+    clearTimeout(timerMensagem.current)
+    timerMensagem.current = setTimeout(() => {
+      setMensagem(null)
+    }, 3000)
+  }
+
   useEffect(() => {
     buscarStatus()
-    buscarDadosDoDia() 
+    buscarDadosDoDia()
   }, [])
+
+  useEffect(() => {
+    buscarDadosDoDia()
+  }, [caixa])
 
   if (!caixa) return <p>Carregando...</p>
 
   async function apagarVenda(id) {
     if (window.confirm(`Tem certeza que deseja apagar a venda #${id}?`)) {
-      
-      const resposta = await fetch(`http://127.0.0.1:5000/sales/${id}`, {method: 'DELETE'})
+      const resposta = await fetch(`http://127.0.0.1:5000/sales/${id}`, { method: 'DELETE' })
       const dados = await resposta.json()
-      
+
       if (resposta.ok) {
         mostrarMensagem('Venda apagada com sucesso!', 'sucesso')
       } else {
         mostrarMensagem(dados.error || 'Erro ao apagar venda.', 'erro')
-    }
-    buscarDadosDoDia()
+      }
+      buscarDadosDoDia()
     }
   }
 
-    async function apagarRetirada(id) {
+  async function apagarRetirada(id) {
     if (window.confirm(`Tem certeza que deseja apagar a retirada #${id}?`)) {
-      const resposta = await fetch(`http://127.0.0.1:5000/withdrawals/${id}`, {method: 'DELETE'})
+      const resposta = await fetch(`http://127.0.0.1:5000/withdrawals/${id}`, { method: 'DELETE' })
       const dados = await resposta.json()
       if (resposta.ok) {
         mostrarMensagem('Retirada apagada com sucesso!', 'sucesso')
@@ -166,7 +182,6 @@ async function registrarRetirada() {
         reason: editMotivo
       })
     })
-
     const dados = await resposta.json()
 
     if (resposta.ok) {
@@ -180,20 +195,12 @@ async function registrarRetirada() {
     }
   }
 
-  function mostrarMensagem(texto, tipo) {
-    setMensagem({ tipo, texto })
-    clearTimeout(timerMensagem.current)
-    timerMensagem.current = setTimeout(() => {
-      setMensagem(null)
-    }, 3000)
-  }
-
-return (
+  return (
     <div className="app">
       <h1>Registro de Caixa</h1>
 
       <Link to="/relatorios">Ver Relatórios</Link>
-      
+
       {mensagem && (
         <div className={`mensagem mensagem-${mensagem.tipo}`}>
           {mensagem.texto}
@@ -253,7 +260,7 @@ return (
         <button type="submit">Registrar Retirada</button>
       </form>
 
-            {/* --- LISTA DE VENDAS --- */}
+      {/* --- LISTA DE VENDAS --- */}
       <div className="lista-dados">
         <h3>Vendas do Dia</h3>
         {dadosDoDia.sales.length === 0 ? (
@@ -261,52 +268,53 @@ return (
         ) : (
           <ul>
             {dadosDoDia.sales.map((venda) => (
-  <li key={venda.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
-    
-    {editandoVendaId === venda.id ? (
-      // --- MODO DE EDIÇÃO ---
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <NumericFormat
-          value={editValor}
-          onValueChange={(values) => setEditValor(values.floatValue)}
-          thousandSeparator="."
-          decimalSeparator=","
-          decimalScale={2}
-          fixedDecimalScale
-          prefix="R$ "
-        />
-        <select value={editForma} onChange={(e) => setEditForma(e.target.value)}>
-          <option value="pix">Pix</option>
-          <option value="debito">Débito</option>
-          <option value="credito">Crédito</option>
-          <option value="dinheiro">Dinheiro</option>
-        </select>
-        <button onClick={() => salvarEdicaoVenda(venda.id)} style={{ background: '#10b981' }}>Salvar</button>
-        <button onClick={() => setEditandoVendaId(null)} style={{ background: '#6b7280' }}>Cancelar</button>
-      </div>
-    ) : (
-      // --- MODO DE VISUALIZAÇÃO ---
-      <>
-        <span>#{venda.id} | {venda.date} | R$ {venda.amount} ({venda.payment_method})</span>
-        <div>
-          <button 
-            onClick={() => {
-              setEditandoVendaId(venda.id); 
-              setEditValor(venda.amount); 
-              setEditForma(venda.payment_method);
-            }} 
-            style={{ background: '#3b82f6', marginRight: '5px' }}
-          >
-            Editar
-          </button>
-          <button onClick={() => apagarVenda(venda.id)} style={{ background: '#ef4444' }}>
-            Apagar
-          </button>
-        </div>
-      </>
-    )}
-  </li>
-))}
+              <li key={venda.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' }}>
+                {editandoVendaId === venda.id ? (
+                  // --- MODO DE EDIÇÃO ---
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <NumericFormat
+                      value={editValor}
+                      onValueChange={(values) => setEditValor(values.floatValue)}
+                      thousandSeparator="."
+                      decimalSeparator=","
+                      decimalScale={2}
+                      fixedDecimalScale
+                      prefix="R$ "
+                    />
+                    <select value={editForma} onChange={(e) => setEditForma(e.target.value)}>
+                      <option value="pix">Pix</option>
+                      <option value="debito">Débito</option>
+                      <option value="credito">Crédito</option>
+                      <option value="dinheiro">Dinheiro</option>
+                    </select>
+                    <button onClick={() => salvarEdicaoVenda(venda.id)} style={{ background: '#10b981' }}>Salvar</button>
+                    <button onClick={() => setEditandoVendaId(null)} style={{ background: '#6b7280' }}>Cancelar</button>
+                  </div>
+                ) : (
+                  // --- MODO DE VISUALIZAÇÃO ---
+                  <>
+                    <span>#{venda.id} | {venda.date} | R$ {venda.amount} ({venda.payment_method})</span>
+                    {caixa.status === 'aberto' && (
+                      <div>
+                        <button
+                          onClick={() => {
+                            setEditandoVendaId(venda.id)
+                            setEditValor(venda.amount)
+                            setEditForma(venda.payment_method)
+                          }}
+                          style={{ background: '#3b82f6', marginRight: '5px' }}
+                        >
+                          Editar
+                        </button>
+                        <button onClick={() => apagarVenda(venda.id)} style={{ background: '#ef4444' }}>
+                          Apagar
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </li>
+            ))}
           </ul>
         )}
       </div>
@@ -321,44 +329,54 @@ return (
             {dadosDoDia.withdrawals.map((retirada) => (
               <li key={retirada.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                 {editandoRetiradaId === retirada.id ? (
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <NumericFormat
-                  value={editValorRetirada}
-                  onValueChange={(values) => setEditValorRetirada(values.floatValue)}
-                  thousandSeparator="."
-                  decimalSeparator=","
-                  decimalScale={2}
-                  fixedDecimalScale
-                  prefix="R$ "
-                />
-                <input
-                  type="text"
-                  value={editMotivo}
-                  onChange={(e) => setEditMotivo(e.target.value)}
-                  placeholder="Motivo"
-                />
-                <button onClick={() => salvarEdicaoRetirada(retirada.id)} style={{ background: '#10b981' }}>
-                  Salvar
-                </button>
-                <button onClick={() => setEditandoRetiradaId(null)} style={{ background: '#6b7280' }}>
-                  Cancelar
-                </button>
-              </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <NumericFormat
+                      value={editValorRetirada}
+                      onValueChange={(values) => setEditValorRetirada(values.floatValue)}
+                      thousandSeparator="."
+                      decimalSeparator=","
+                      decimalScale={2}
+                      fixedDecimalScale
+                      prefix="R$ "
+                    />
+                    <input
+                      type="text"
+                      value={editMotivo}
+                      onChange={(e) => setEditMotivo(e.target.value)}
+                      placeholder="Motivo"
+                    />
+                    <button onClick={() => salvarEdicaoRetirada(retirada.id)} style={{ background: '#10b981' }}>
+                      Salvar
+                    </button>
+                    <button onClick={() => setEditandoRetiradaId(null)} style={{ background: '#6b7280' }}>
+                      Cancelar
+                    </button>
+                  </div>
                 ) : (
                   <>
                     <span>#{retirada.id} | {retirada.date} | R$ {retirada.amount} ({retirada.reason})</span>
-                    <button onClick={() => {
-                      setEditandoRetiradaId(retirada.id);
-                      setEditValorRetirada(retirada.amount);
-                      setEditMotivo(retirada.reason);
-                    }} style={{ background: '#3b82f6', padding: '5px 10px', marginLeft: '10px' }}>
-                      Editar
-                    </button>
-                    <button onClick={() => apagarRetirada(retirada.id)} style={{ background: '#ef4444', padding: '5px 10px', marginLeft: '10px' }}>
-                      Apagar
-                    </button>
+                    {caixa.status === 'aberto' && (
+                      <div>
+                        <button
+                          onClick={() => {
+                            setEditandoRetiradaId(retirada.id)
+                            setEditValorRetirada(retirada.amount)
+                            setEditMotivo(retirada.reason)
+                          }}
+                          style={{ background: '#3b82f6', padding: '5px 10px', marginLeft: '10px' }}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => apagarRetirada(retirada.id)}
+                          style={{ background: '#ef4444', padding: '5px 10px', marginLeft: '10px' }}
+                        >
+                          Apagar
+                        </button>
+                      </div>
+                    )}
                   </>
-              )}
+                )}
               </li>
             ))}
           </ul>
@@ -376,4 +394,5 @@ return (
     </div>
   )
 }
+
 export default Caixa
